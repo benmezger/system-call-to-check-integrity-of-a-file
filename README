@@ -1,0 +1,50 @@
+/*README*/
+
+NAME : SREEKAR REDDY
+SB ID # : 108625486
+
+In this homework, initially a 3.2.y kernel is built that is configured as minimally as possible. 
+Then a linux kernel module that supports a new multi-mode system call when loaded is created. The system call takes an input file and then depending on the mode on which it is called returns the existing integrity of the file, computes an updated integrity of the file and also veifies the integrity on opening it.
+The system call takes a void* generic pointer that is packed with multiple arguments for different modes of the call.
+
+MODE 1: 
+
+When the system call is called in this mode, it returns the existing known integrity of the file. It returns a 0 on success 
+and an appropriate -errno on failure.
+Initially the arguments are validated and copied from the user space to the kernel space. Then the file that is passed 
+as input is opened and the integrity value of the file that is stored as its extended attribute is retrieved with the help of 'vfs_getxattr()'and is returned to the user. An error is returned if the file does not have a known integrity value or if the user does not have permission to access it.
+
+MODE 2:
+
+When the system call is called in this mode, the file is opened and an updated integrity of the file is computed. 
+An error is returned if the file can't be opened. The system call returns a 0 on success and an appropriate -errno on failure.
+Since, only authorised users should be able to compute the file's integrity, the user passes a password that is used by the 
+kernel to authenticate him. This is done with the help of a password that is hard-coded in the kernel code. Only if these 
+two passwords match, the user is allowed to compute the integrity of the file. To compute its integrity, the file is read
+one chunk at a time and the Linux CryptoAPI is used to compute it. After the integrity is computed, it is added as an 
+extended attribute to the file with the help of 'vfs_setxattr()' and is returned to the user. After setting the integrity of the file as its extended attribute, MODE 1 can also be tested.An error is returned if the file system does not support extended attributes.
+
+
+MODE 3:
+
+When the system call is called in this mode, the file that is passed is opened and a regular file descriptor is returned to the user if the checksum for this file matches the stored checksum. An -EPERM is returned in case the check sums don't match. In this way, the integrity of the file is verified before the file descriptor is returned. Thus in this mode, initially the checksum is computed as in MODE 2 and this is checked against the already stored checksum. If they match, the file descriptor is returned to the user.
+
+In each of the above modes,the system calls are checked for the various errors that can be caused by the users such as passing null arguments, missing arguments, invalid arguments etc.
+
+The files incuded in the submission are :
+
+1)sys_xintegrity.c : This is the loadable kernel module which consists of the system call implementation.
+
+2)xhw1.c : This is a user-application which invokes the system call.
+
+3)sys_integrity.h : This is the common header file that defines the structures needed for the various modes and is included in both sys_xintegrity.c and xhw1.c.
+
+4)Makefile : This file has commands to compile the user level program as well as the loadable kernel module.
+
+5)kernel.config : I have tried to build kernel with minimum configuration by using the class notes by enabling other options that I thought are relavent to the hardware configuration.
+ 
+6)password.txt : This files specifies the password that is used to authenticate the user in MODE 2. 
+
+
+
+ 
